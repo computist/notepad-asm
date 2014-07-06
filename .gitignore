@@ -39,3 +39,8 @@ Icon
 
 # Backups
 Bak/
+
+# Built file
+*.undo
+*.obj
+*.RES
