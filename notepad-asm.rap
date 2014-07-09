@@ -10,7 +10,7 @@ Res.rc=1
 1=notepad-asm.Asm
 2=notepad-asm.Inc
 3=notepad-asm.Rc
-4=
+4=MainMenu.mnu
 [MakeFiles]
 0=notepad-asm.rap
 1=notepad-asm.rc
@@ -43,7 +43,7 @@ Group=Assembly,Resources,Misc
 1=1
 2=1
 3=2
-4=
+4=2
 [AutoLoad]
 AutoLoad=
 [RADebugBP]

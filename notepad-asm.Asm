@@ -24,7 +24,22 @@ WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
 
 .const
    IDI_NOTEPAD equ 1000
-
+   ;MainMenu.mnu
+   IDR_MENU			equ 10000
+   IDM_FILE			equ 10001
+   IDM_OPEN			equ 10002
+   IDM_Save			equ 10003
+   IDM_BAR			equ 10004
+   IDM_EXIT			equ 10005
+   IDM_EDIT			equ 10006
+   IDM_UNDO			equ 10007
+   IDM_REDO			equ 10008
+   IDM_CUT			equ 10009
+   IDM_COPY			equ 10010
+   IDM_PASTE			equ 10011
+   IDM_HELP			equ 10012
+   IDM_ABOUT			equ 10013
+   IDM_BAR2			equ 10014
 .code
 
 
@@ -54,7 +69,7 @@ WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
 	push  hInstance
 	pop   wc.hInstance
 	mov   wc.hbrBackground,COLOR_BTNFACE+1
-	mov   wc.lpszMenuName,NULL
+	mov   wc.lpszMenuName,IDR_MENU
 	mov   wc.lpszClassName,OFFSET ClassName
 	
 	invoke LoadIcon,NULL,IDI_NOTEPAD
