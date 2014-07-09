@@ -17,6 +17,8 @@ WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
    ClassName db "MainWinClass",0
    AppName  db "Notepad ASM",0
    EditClass db "Edit",0
+   About db "This is an advanced notepad build with assembly.",0
+   
 .data?
    hInstance HINSTANCE ?
    CommandLine LPSTR ?
@@ -108,6 +110,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 	.IF uMsg==WM_DESTROY
 		invoke PostQuitMessage,NULL
 	.ELSEIF uMsg==WM_CREATE
+		; Add Window Icon
 		invoke LoadIcon,hInstance,IDI_NOTEPAD
 		invoke SendMessage,hWnd, WM_SETICON, ICON_BIG, eax
 		
@@ -128,10 +131,32 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		
 		mov eax, winRect.bottom
 		sub eax, winRect.top
-		sub eax, 32
+		sub eax, 52
 		mov EditHeight, eax
 		
 		invoke MoveWindow,hEdit, 0, 0, EditWidth, EditHeight, TRUE
+	.ELSEIF uMsg==WM_COMMAND 
+		mov eax, wParam
+		.IF ax==IDM_ABOUT
+			invoke MessageBox,hWnd, addr About, addr AppName, MB_OK
+		.ELSEIF ax==IDM_OPEN
+			;
+		.ELSEIF ax==IDM_Save
+			;
+		.ELSEIF ax==IDM_EXIT
+			invoke DestroyWindow, hWnd
+			invoke PostQuitMessage,NULL
+		.ELSEIF ax==IDM_UNDO
+			invoke SendMessage,hEdit, EM_UNDO,0,0
+		.ELSEIF ax==IDM_REDO
+			invoke SendMessage,hEdit, EM_REDO,0,0
+		.ELSEIF ax==IDM_CUT
+			invoke SendMessage,hEdit, WM_CUT,0,0
+		.ELSEIF	ax==IDM_COPY
+			invoke SendMessage,hEdit, WM_COPY,0,0
+		.ELSEIF	ax==IDM_PASTE
+			invoke SendMessage,hEdit, WM_PASTE,0,0
+		.ENDIF
 		
 	.ELSE
 		invoke DefWindowProc,hWnd,uMsg,wParam,lParam		
