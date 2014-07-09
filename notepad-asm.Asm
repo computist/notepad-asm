@@ -162,6 +162,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 			mov ofn.lpstrFile, offset strFile
 			mov ofn.nMaxFile, MAX_PATH
 			mov ofn.lpstrFilter, offset szFilter
+			mov ofn.lpstrDefExt, offset szDefExt
 			mov ofn.nFilterIndex, 1
 			mov ofn.Flags, OFN_PATHMUSTEXIST or OFN_FILEMUSTEXIST
 			invoke GetOpenFileName,addr ofn
@@ -178,14 +179,18 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 			.ENDIF
 			
 		.ELSEIF ax==IDM_SAVE
-			invoke CreateFile, addr strFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
-			.IF eax != INVALID_HANDLE_VALUE
-				mov hFile, eax
-				invoke GetWindowText,hEdit, addr strFileBuf, sizeof strFileBuf
-				invoke GetWindowTextLength,hEdit
-				mov editLength, eax
-				invoke WriteFile, hFile, addr strFileBuf, editLength, addr byteWrite, NULL					
-				invoke CloseHandle,hFile
+			.IF strFile!=NULL				
+				invoke CreateFile, addr strFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+				.IF eax != INVALID_HANDLE_VALUE
+					mov hFile, eax
+					invoke GetWindowText,hEdit, addr strFileBuf, sizeof strFileBuf
+					invoke GetWindowTextLength,hEdit
+					mov editLength, eax
+					invoke WriteFile, hFile, addr strFileBuf, editLength, addr byteWrite, NULL					
+					invoke CloseHandle,hFile
+				.ENDIF
+			.ELSEIF
+				invoke SendMessage,hWnd,WM_COMMAND,IDM_Save_AS,0
 			.ENDIF
 		.ELSEIF ax==IDM_Save_AS
 		
@@ -197,12 +202,13 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 			mov ofn.lpstrFile, offset strFile
 			mov ofn.nMaxFile, MAX_PATH
 			mov ofn.lpstrFilter, offset szFilter
+			mov ofn.lpstrDefExt, offset szDefExt
 			mov ofn.nFilterIndex, 1
 			mov ofn.Flags, OFN_OVERWRITEPROMPT or OFN_EXPLORER
 			invoke GetSaveFileName,addr ofn
 			
 			.IF eax==TRUE
-				invoke CreateFile, addr strFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+				invoke CreateFile, addr strFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL
 				.IF eax != INVALID_HANDLE_VALUE
 					mov hFile, eax
 					invoke GetWindowText,hEdit, addr strFileBuf, sizeof strFileBuf
