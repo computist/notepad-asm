@@ -1,7 +1,8 @@
 #define IDR_MENU 10000
 #define IDM_FILE 10001
 #define IDM_OPEN 10002
-#define IDM_Save 10003
+#define IDM_SAVE 10015
+#define IDM_Save_AS 10003
 #define IDM_BAR 10004
 #define IDM_EXIT 10005
 #define IDM_EDIT 10006
@@ -18,7 +19,8 @@ BEGIN
   POPUP "&File",IDM_FILE
   BEGIN
     MENUITEM "&Open...",IDM_OPEN
-    MENUITEM "&Save...",IDM_Save
+    MENUITEM "&Save",IDM_SAVE
+    MENUITEM "&Save As...",IDM_Save_AS
     MENUITEM "",IDM_BAR,0x00000800,0x00000003
     MENUITEM "&Exit",IDM_EXIT
   END

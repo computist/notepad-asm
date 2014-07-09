@@ -5,9 +5,11 @@ option casemap:none
    include windows.inc
    include user32.inc
    include kernel32.inc
+   include comdlg32.inc
    
    includelib user32.lib
    includelib kernel32.lib
+   includelib comdlg32.lib
 
 
 WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
@@ -19,18 +21,25 @@ WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
    EditClass db "Edit",0
    About db "This is an advanced notepad build with assembly.",0
    
+   szFilter db "Text File(*.txt)",0,"*.txt",0,"All File(*.*)",0,"*.*",0,0
+   szDefExt db "txt",0
+   
 .data?
    hInstance HINSTANCE ?
    CommandLine LPSTR ?
-   hEdit HWND ?
-
+   hEdit HWND ? ;Textedit handle
+   strFile db MAX_PATH dup(?)  ;Open file name
+   strFileBuf db 8000 dup(?)
+   hFile HWND ? ;File handle
+   
 .const
    IDI_NOTEPAD equ 1000
    ;MainMenu.mnu
    IDR_MENU			equ 10000
    IDM_FILE			equ 10001
    IDM_OPEN			equ 10002
-   IDM_Save			equ 10003
+   IDM_SAVE			equ 10015
+   IDM_Save_AS			equ 10003
    IDM_BAR			equ 10004
    IDM_EXIT			equ 10005
    IDM_EDIT			equ 10006
@@ -62,7 +71,7 @@ WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
 	LOCAL wc:WNDCLASSEX
 	LOCAL msg:MSG
 	LOCAL hwnd:HWND
-	
+
 	mov   wc.cbSize,SIZEOF WNDCLASSEX
 	mov   wc.style, CS_HREDRAW or CS_VREDRAW
 	mov   wc.lpfnWndProc, OFFSET WndProc
@@ -106,6 +115,10 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 	LOCAL winRect:RECT
 	LOCAL EditWidth:DWORD
 	LOCAL EditHeight:DWORD
+	LOCAL ofn:OPENFILENAME
+	LOCAL byteRead:DWORD
+	LOCAL byteWrite:DWORD
+	LOCAL editLength:DWORD ;string length in edit
 	
 	.IF uMsg==WM_DESTROY
 		invoke PostQuitMessage,NULL
@@ -140,9 +153,65 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		.IF ax==IDM_ABOUT
 			invoke MessageBox,hWnd, addr About, addr AppName, MB_OK
 		.ELSEIF ax==IDM_OPEN
-			;
-		.ELSEIF ax==IDM_Save
-			;
+		
+			invoke RtlZeroMemory, addr ofn, sizeof ofn
+			invoke RtlZeroMemory, addr strFileBuf, sizeof strFileBuf
+			mov ofn.lStructSize, sizeof ofn			
+			push hWnd
+			pop ofn.hwndOwner
+			mov ofn.lpstrFile, offset strFile
+			mov ofn.nMaxFile, MAX_PATH
+			mov ofn.lpstrFilter, offset szFilter
+			mov ofn.nFilterIndex, 1
+			mov ofn.Flags, OFN_PATHMUSTEXIST or OFN_FILEMUSTEXIST
+			invoke GetOpenFileName,addr ofn
+			
+			.IF eax==TRUE
+				invoke CreateFile, addr strFile, GENERIC_READ, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+				.IF eax != INVALID_HANDLE_VALUE
+					mov hFile, eax
+					invoke ReadFile,hFile, addr strFileBuf, sizeof strFileBuf, addr byteRead, NULL
+					invoke SendMessage,hEdit, WM_CLEAR, 0, 0
+					invoke SetWindowText, hEdit, addr strFileBuf
+					invoke CloseHandle,hFile				
+				.ENDIF
+			.ENDIF
+			
+		.ELSEIF ax==IDM_SAVE
+			invoke CreateFile, addr strFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+			.IF eax != INVALID_HANDLE_VALUE
+				mov hFile, eax
+				invoke GetWindowText,hEdit, addr strFileBuf, sizeof strFileBuf
+				invoke GetWindowTextLength,hEdit
+				mov editLength, eax
+				invoke WriteFile, hFile, addr strFileBuf, editLength, addr byteWrite, NULL					
+				invoke CloseHandle,hFile
+			.ENDIF
+		.ELSEIF ax==IDM_Save_AS
+		
+			invoke RtlZeroMemory, addr ofn, sizeof ofn
+			invoke RtlZeroMemory, addr strFileBuf, sizeof strFileBuf
+			mov ofn.lStructSize, sizeof ofn			
+			push hWnd
+			pop ofn.hwndOwner
+			mov ofn.lpstrFile, offset strFile
+			mov ofn.nMaxFile, MAX_PATH
+			mov ofn.lpstrFilter, offset szFilter
+			mov ofn.nFilterIndex, 1
+			mov ofn.Flags, OFN_OVERWRITEPROMPT or OFN_EXPLORER
+			invoke GetSaveFileName,addr ofn
+			
+			.IF eax==TRUE
+				invoke CreateFile, addr strFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+				.IF eax != INVALID_HANDLE_VALUE
+					mov hFile, eax
+					invoke GetWindowText,hEdit, addr strFileBuf, sizeof strFileBuf
+					invoke GetWindowTextLength,hEdit
+					mov editLength, eax
+					invoke WriteFile, hFile, addr strFileBuf, editLength, addr byteWrite, NULL					
+					invoke CloseHandle,hFile
+				.ENDIF
+			.ENDIF
 		.ELSEIF ax==IDM_EXIT
 			invoke DestroyWindow, hWnd
 			invoke PostQuitMessage,NULL
