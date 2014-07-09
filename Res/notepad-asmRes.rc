@@ -1,0 +1,2 @@
+#define IDI_NOTEPAD			1000
+IDI_NOTEPAD		ICON      DISCARDABLE "Res/notepad.ico"

@@ -1,25 +1,103 @@
-.686
-.model flat, stdcall
+.586
+.model flat,stdcall
 option casemap:none
 
-include windows.inc
-include kernel32.inc
-include user32.inc
+   include windows.inc
+   include user32.inc
+   include kernel32.inc
+   
+   includelib user32.lib
+   includelib kernel32.lib
 
-includelib kernel32.lib
-includelib user32.lib
+
+WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
+
 
 .data
-	szTitle db "Haha", 0
-	szCaption db "Notepad", 0
+   ClassName db "MainWinClass",0
+   AppName  db "Notepad ASM",0
 
 .data?
-
+   hInstance HINSTANCE ?
+   CommandLine LPSTR ?
 .const
+   IDI_NOTEPAD equ 1000
 
 .code
+
+
+; ---------------------------------------------------------------------------
+
+
 start:
-	invoke MessageBox, 0, addr szTitle, addr szCaption, MB_OK
-	invoke ExitProcess, 0
+	invoke GetModuleHandle, NULL
+	mov    hInstance,eax
+	
+	invoke GetCommandLine
+	mov    CommandLine,eax
+	
+	invoke WinMain, hInstance,NULL,CommandLine, SW_SHOWDEFAULT
+	invoke ExitProcess,eax
+
+WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
+	LOCAL wc:WNDCLASSEX
+	LOCAL msg:MSG
+	LOCAL hwnd:HWND
+	
+	mov   wc.cbSize,SIZEOF WNDCLASSEX
+	mov   wc.style, CS_HREDRAW or CS_VREDRAW
+	mov   wc.lpfnWndProc, OFFSET WndProc
+	mov   wc.cbClsExtra,NULL
+	mov   wc.cbWndExtra,NULL
+	push  hInstance
+	pop   wc.hInstance
+	mov   wc.hbrBackground,COLOR_BTNFACE+1
+	mov   wc.lpszMenuName,NULL
+	mov   wc.lpszClassName,OFFSET ClassName
+	
+	invoke LoadIcon,NULL,IDI_NOTEPAD
+	mov   wc.hIcon,eax
+	mov   wc.hIconSm,eax
+	
+	invoke LoadCursor,NULL,IDC_ARROW
+	mov   wc.hCursor,eax
+	
+	invoke RegisterClassEx, addr wc
+	INVOKE CreateWindowEx,NULL,ADDR ClassName,ADDR AppName,\
+           WS_OVERLAPPEDWINDOW,CW_USEDEFAULT,\
+           CW_USEDEFAULT,CW_USEDEFAULT,CW_USEDEFAULT,NULL,NULL,\
+           hInst,NULL
+	mov   hwnd,eax
+	
+	invoke ShowWindow, hwnd,SW_SHOWNORMAL
+	invoke UpdateWindow, hwnd
+	
+	.WHILE TRUE
+		invoke GetMessage, ADDR msg,NULL,0,0
+		.BREAK .IF (!eax)
+		invoke TranslateMessage, ADDR msg
+		invoke DispatchMessage, ADDR msg
+	.ENDW
+	
+	mov     eax,msg.wParam
+	ret
+WinMain endp
+
+WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+	
+	.IF uMsg==WM_DESTROY
+		invoke PostQuitMessage,NULL
+	.ELSEIF uMsg==WM_CREATE
+		invoke LoadIcon,hInstance,IDI_NOTEPAD
+		invoke SendMessage,hWnd, WM_SETICON, ICON_BIG, eax
+	.ELSE
+		invoke DefWindowProc,hWnd,uMsg,wParam,lParam		
+		ret
+	.ENDIF
+	
+	xor eax,eax
+	ret
+WndProc endp
+
 
 end start
