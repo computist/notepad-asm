@@ -52,3 +52,5 @@ AutoLoad=
 1=IDI_NOTEPAD,1000,2,Res\notepad.ico
 [Size]
 4=
+[Find]
+1="hWnd"
