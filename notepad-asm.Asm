@@ -6,13 +6,16 @@ option casemap:none
    include user32.inc
    include kernel32.inc
    include comdlg32.inc
+   include gdi32.inc
    
    includelib user32.lib
    includelib kernel32.lib
    includelib comdlg32.lib
+   includelib gdi32.lib
 
 
 WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
+
 
 
 .data
@@ -31,6 +34,7 @@ WinMain proto :DWORD,:DWORD,:DWORD,:DWORD
    strFile db MAX_PATH dup(?)  ;Open file name
    strFileBuf db 8000 dup(?)
    hFile HWND ? ;File handle
+   lpEditProc dd ? ;edit subclass addres
    
 .const
    IDI_NOTEPAD equ 1000
@@ -111,6 +115,115 @@ WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
 	ret
 WinMain endp
 
+_ShowLineNum  proc  hwndEdit:HWND
+; show line number
+	
+LOCAL	@stClientRect:RECT		;client rect
+LOCAL  	@hDcEdit			;edit device
+LOCAL  	@Char_Height			;font height
+LOCAL  	@Line_Count			;line number
+LOCAL  	@ClientHeight			;edit height
+LOCAL	@hdcBmp				;compatible bitmap
+LOCAL	@hdcCpb				;compatible device
+LOCAL	@stBuf[10]:byte			;line buffer
+LOCAL 	tm:TEXTMETRIC			;information about a physical font
+
+	pushad
+	
+	;get edit device
+	invoke  GetDC, hEdit		
+	mov	@hDcEdit, eax
+	;set edit rect
+	invoke  GetClientRect, hEdit, addr @stClientRect
+	mov	ebx, @stClientRect.bottom
+	sub	ebx, @stClientRect.top
+	mov	@ClientHeight, ebx
+	;create compatible device
+	invoke  CreateCompatibleDC, @hDcEdit
+	mov	@hdcCpb, eax
+	;create compatible bitmap
+	invoke  CreateCompatibleBitmap, @hDcEdit, 40, @ClientHeight
+	mov	@hdcBmp, eax
+	;select the bitmap into the device
+	invoke  SelectObject, @hdcCpb, @hdcBmp	
+	;set the paint brush color
+	invoke  CreateSolidBrush, 066ccffh
+	;add background color
+	invoke  FillRect, @hdcCpb, addr @stClientRect, eax
+	invoke  SetBkMode, @hdcCpb, TRANSPARENT
+	
+	;get total line number
+	invoke  SendMessage, hEdit, EM_GETLINECOUNT, 0, 0
+	mov 	@Line_Count, eax 
+	
+	; get font size
+	invoke RtlZeroMemory, addr tm, sizeof tm
+	invoke GetTextMetrics, @hDcEdit, addr tm
+	push 	tm.tmHeight
+	pop 	@Char_Height
+	
+.data
+	charFmt  byte  "%4u", 0
+.code
+	invoke	RtlZeroMemory, addr @stBuf, sizeof @stBuf
+	;set font color
+	invoke  SetTextColor, @hdcCpb, 0000000h
+	mov	ebx, @Char_Height
+	mov	@Char_Height, 1
+	
+	;get first line
+	invoke  SendMessage, hEdit, EM_GETFIRSTVISIBLELINE, 0, 0
+	mov	edi, eax
+	inc	edi
+	;print line number onto device bitmap in a loop
+	.while	edi <= @Line_Count
+		invoke  wsprintf, addr @stBuf, addr charFmt, edi
+		invoke  TextOut, @hdcCpb, 1, @Char_Height, addr @stBuf, eax
+		mov	edx, @Char_Height
+		add	edx, ebx
+		mov	@Char_Height, edx
+		inc  	edi
+		.break  .if  edx > @ClientHeight
+	.endw
+	;attach the bitmap to edit
+	invoke BitBlt, @hDcEdit, 0, 0, 40, @ClientHeight, @hdcCpb, 0, 0, SRCCOPY 
+	invoke DeleteDC, @hdcCpb
+	invoke ReleaseDC, hEdit, @hDcEdit
+	invoke DeleteObject, @hdcBmp
+	
+	popad
+	
+	ret
+	
+_ShowLineNum endp
+
+_ProcEdit proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
+	LOCAL @stPS:PAINTSTRUCT
+	LOCAL @stEditRect:RECT
+	
+	; customized message translation
+	.IF uMsg==WM_PAINT
+		invoke CallWindowProc,lpEditProc, hWnd, uMsg, wParam, lParam
+		invoke BeginPaint, hEdit, addr @stPS
+		
+		;show line number
+		invoke _ShowLineNum, hEdit
+		
+		invoke EndPaint,hEdit, addr @stPS
+		ret
+	.ELSEIF uMsg==WM_KEYUP || uMsg==WM_KEYDOWN
+		invoke GetClientRect,hEdit, addr @stEditRect
+		mov @stEditRect.right, 45
+		invoke InvalidateRect, hEdit, addr @stEditRect, TRUE
+	.ENDIF
+	
+	; call standard message translation
+	invoke CallWindowProc,lpEditProc, hWnd, uMsg, wParam, lParam
+	ret
+
+_ProcEdit endp
+
+
 WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 	LOCAL winRect:RECT
 	LOCAL EditWidth:DWORD
@@ -133,6 +246,12 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 		ES_MULTILINE or WS_VISIBLE, 0, 0, 300, 300, hWnd, NULL, hInstance, NULL
 		
 		mov hEdit, eax
+		
+		; add left margin to show lines
+		invoke SendMessage,hEdit, EM_SETMARGINS, EC_LEFTMARGIN, 0005h+40
+		; set edit subclass
+		invoke SetWindowLong,hEdit, GWL_WNDPROC, addr _ProcEdit
+		mov lpEditProc, eax
 		
 	.ELSEIF uMsg==WM_SIZE
 		; Update text field size
@@ -242,6 +361,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 	xor eax,eax
 	ret
 WndProc endp
+
 
 
 end start
