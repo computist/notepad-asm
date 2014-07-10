@@ -183,6 +183,7 @@ WndProc proc hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 				invoke CreateFile, addr strFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
 				.IF eax != INVALID_HANDLE_VALUE
 					mov hFile, eax
+					invoke RtlZeroMemory, addr strFileBuf, sizeof strFileBuf
 					invoke GetWindowText,hEdit, addr strFileBuf, sizeof strFileBuf
 					invoke GetWindowTextLength,hEdit
 					mov editLength, eax
