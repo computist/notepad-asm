@@ -45,14 +45,16 @@ Group=Assembly,Resources,Misc
 3=2
 4=2
 [AutoLoad]
-AutoLoad=1
+AutoLoad=1,3
 [RADebugBP]
 1=
+3=
 [Resource]
 1=IDI_NOTEPAD,1000,2,Res\notepad.ico
 [Size]
 4=
-1=0,0,0,0,4837
+1=0,0,0,0,2592
+3=0,0,0,0,62
 [Find]
 1="@CharFmt"
 2="tm"
@@ -104,6 +106,7 @@ ProductVer4Range=0
 7=00FFFFFF
 [Collapse]
 1=
+3=
 [GroupExpand]
 GroupExpand=1,0,1,0
 [BookMark]

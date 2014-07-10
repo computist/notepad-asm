@@ -1,2 +1,15 @@
 #include "Res/MainMenuMnu.rc"
 #include "Res/notepad-asmRes.rc"
+
+IDR_MENU accelerators
+BEGIN
+
+    "O",   IDM_OPEN,VIRTKEY,CONTROL
+    "S",   IDM_SAVE,VIRTKEY,CONTROL
+    "Z",   IDM_UNDO,VIRTKEY,CONTROL
+    "Y",   IDM_REDO,VIRTKEY,CONTROL
+    "X",   IDM_CUT,VIRTKEY,CONTROL
+    "C",   IDM_COPY,VIRTKEY,CONTROL
+    "V",   IDM_PASTE,VIRTKEY,CONTROL   
+    
+END 

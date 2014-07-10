@@ -27,7 +27,7 @@ BEGIN
   POPUP "&Edit",IDM_EDIT
   BEGIN
     MENUITEM "&Undo\tCtrl+Z",IDM_UNDO
-    MENUITEM "&Redo\tCtrl+Shift+Z",IDM_REDO
+    MENUITEM "&Redo\tCtrl+Y",IDM_REDO
     MENUITEM "",IDM_BAR2,0x00000800
     MENUITEM "&Cut\tCtrl+X",IDM_CUT
     MENUITEM "&Copy\tCtrl+C",IDM_COPY

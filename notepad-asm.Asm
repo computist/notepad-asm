@@ -75,6 +75,7 @@ WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
 	LOCAL wc:WNDCLASSEX
 	LOCAL msg:MSG
 	LOCAL hwnd:HWND
+	LOCAL  	@hAccelerator
 
 	mov   wc.cbSize,SIZEOF WNDCLASSEX
 	mov   wc.style, CS_HREDRAW or CS_VREDRAW
@@ -86,6 +87,9 @@ WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
 	mov   wc.hbrBackground,COLOR_BTNFACE+1
 	mov   wc.lpszMenuName,IDR_MENU
 	mov   wc.lpszClassName,OFFSET ClassName
+	
+	invoke  LoadAccelerators, hInstance, IDR_MENU	;add hot key
+	mov	@hAccelerator, eax
 	
 	invoke LoadIcon,NULL,IDI_NOTEPAD
 	mov   wc.hIcon,eax
@@ -107,8 +111,12 @@ WinMain proc hInst:HINSTANCE,hPrevInst:HINSTANCE,CmdLine:LPSTR,CmdShow:DWORD
 	.WHILE TRUE
 		invoke GetMessage, ADDR msg,NULL,0,0
 		.BREAK .IF (!eax)
-		invoke TranslateMessage, ADDR msg
-		invoke DispatchMessage, ADDR msg
+		;process hotkey
+		invoke  TranslateAccelerator, hwnd, @hAccelerator, addr msg
+		.IF eax==0
+			invoke TranslateMessage, ADDR msg
+			invoke DispatchMessage, ADDR msg
+		.ENDIF
 	.ENDW
 	
 	mov     eax,msg.wParam
